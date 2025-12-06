@@ -4,13 +4,18 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 # Create database engine
-db_url = settings.database_url
-# Render and some other providers supply DATABASE_URL with the scheme "postgres://".
-# SQLAlchemy expects the dialect name "postgresql://". Normalize that here so
-# deployments work without needing to change the provider's env var.
-if isinstance(db_url, str) and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+import re
 
+# Read the configured DB URL
+db_url = settings.database_url
+
+# Normalize provider-provided URLs that use the legacy "postgres://" scheme
+# to SQLAlchemy's expected "postgresql://". Use a case-insensitive match so
+# variations like "Postgres://" are also fixed.
+if isinstance(db_url, str):
+    db_url = re.sub(r"(?i)^postgres://", "postgresql://", db_url, count=1)
+
+# Create the SQLAlchemy engine
 engine = create_engine(db_url)
 
 # Create SessionLocal class
