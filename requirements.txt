@@ -1,0 +1,30 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+gunicorn
+# Database
+sqlalchemy
+alembic
+psycopg2-binary
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+
+# Data Validation & Settings (updated for Python 3.13 compatibility)
+pydantic
+pydantic-settings
+email-validator
+
+# Environment & Configuration
+python-dotenv
+
+# File Upload & Storage
+boto3
+pillow
+
+# Testing
+pytest
+pytest-asyncio
+httpx

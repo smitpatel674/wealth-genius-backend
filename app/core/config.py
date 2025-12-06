@@ -1,0 +1,96 @@
+from pydantic_settings import BaseSettings
+from typing import List, Optional
+import os
+
+
+class Settings(BaseSettings):
+    # Database Configuration
+    database_url: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql://postgres:root@localhost:5432/wealth"
+    )
+    database_test_url: str = "postgresql://postgres:password@localhost:5432/marketpro_test_db"
+    
+    # Security
+    secret_key: str = os.getenv(
+        "SECRET_KEY",
+        "your-secret-key-here-make-it-long-and-random"
+    )
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+    
+    # Email Configuration (Gmail)
+    smtp_host: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port: int = int(os.getenv("SMTP_PORT", 587))
+    smtp_user: str = os.getenv("SMTP_USER", "your-gmail@gmail.com")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "your-gmail-app-password")
+    
+    # Redis Configuration
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+    
+    # AWS Configuration
+    aws_access_key_id: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
+    aws_region: str = os.getenv("AWS_REGION", "us-east-1")
+    aws_s3_bucket: str = os.getenv("AWS_S3_BUCKET", "marketpro-uploads")
+    
+    # Stripe Configuration
+    stripe_secret_key: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
+    stripe_publishable_key: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY")
+    stripe_webhook_secret: Optional[str] = os.getenv("STRIPE_WEBHOOK_SECRET")
+    
+    # Angel One API Configuration
+    angel_api_key: Optional[str] = os.getenv("ANGEL_API_KEY")
+    angel_client_id: Optional[str] = os.getenv("ANGEL_CLIENT_ID")
+    angel_refresh_token: Optional[str] = os.getenv("ANGEL_REFRESH_TOKEN")
+    angel_feed_token: Optional[str] = os.getenv("ANGEL_FEED_TOKEN")
+    angel_totp_secret: Optional[str] = os.getenv("ANGEL_TOTP_SECRET")
+    angel_mpin: Optional[str] = os.getenv("ANGEL_MPIN")
+    
+    # Application Settings
+    debug: bool = os.getenv("DEBUG", "False").lower() == "true"
+    environment: str = os.getenv("ENVIRONMENT", "production")
+    api_v1_prefix: str = "/api/v1"
+    project_name: str = "Wealth Genius Trading Education Platform"
+    
+    # CORS Origins - store raw env string first to avoid pydantic attempting
+    # to JSON-decode an empty string. We'll convert to a list in __init__.
+    cors_origins: Optional[str] = None
+
+    # Default CORS origins used when no env override is provided
+    _default_cors_origins: List[str] = [
+        "http://localhost:5173/",
+    ]
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Prefer explicit env var if set; fall back to default list
+        cors_env = os.getenv("CORS_ORIGINS")
+        parsed: List[str] = []
+        if cors_env is not None and cors_env.strip() != "" and cors_env != "CORS_ORIGINS":
+            cors_env = cors_env.strip()
+            try:
+                # Try JSON array format first: ["https://a.com", "https://b.com"]
+                import json
+
+                val = json.loads(cors_env)
+                if isinstance(val, list):
+                    parsed = [o for o in val if isinstance(o, str) and o.strip()]
+            except (json.JSONDecodeError, ValueError):
+                # Fall back to comma-separated: "https://a.com,https://b.com"
+                parsed = [o.strip() for o in cors_env.split(",") if o.strip()]
+
+        # If no valid env provided, use the hard-coded defaults
+        if not parsed:
+            parsed = list(self._default_cors_origins)
+
+        # At runtime, expose `cors_origins` as a list for the rest of the app
+        object.__setattr__(self, "cors_origins", parsed)
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+
+settings = Settings()
