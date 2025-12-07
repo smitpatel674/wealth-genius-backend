@@ -42,15 +42,26 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
         else:
             msg.attach(MIMEText(body, 'plain'))
         
-        # Gmail SMTP connection
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.login(GMAIL_USER, GMAIL_PASSWORD)
-            
-            # Send email
-            text = msg.as_string()
-            server.sendmail(GMAIL_USER, to_email, text)
-        
-        return True
+        # Try SSL connection (Port 465) first
+        try:
+            with smtplib.SMTP_SSL(SMTP_SERVER, 465, timeout=10) as server:
+                server.login(GMAIL_USER, GMAIL_PASSWORD)
+                text = msg.as_string()
+                server.sendmail(GMAIL_USER, to_email, text)
+                return True
+        except Exception as e:
+            print(f"SSL (465) failed: {e}. Retrying with TLS (587)...")
+            # Fallback to TLS (Port 587)
+            try:
+                with smtplib.SMTP(SMTP_SERVER, 587, timeout=10) as server:
+                    server.starttls()
+                    server.login(GMAIL_USER, GMAIL_PASSWORD)
+                    text = msg.as_string()
+                    server.sendmail(GMAIL_USER, to_email, text)
+                    return True
+            except Exception as e2:
+                print(f"TLS (587) also failed: {e2}")
+                raise e2
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False

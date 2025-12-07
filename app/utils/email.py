@@ -21,20 +21,25 @@ def send_email(to_email: str, subject: str, body: str, html_body: str = None):
             html_part = MIMEText(html_body, 'html')
             msg.attach(html_part)
 
-        # Send email
-        if settings.smtp_port == 465:
+        # Try SSL connection (Port 465) first
+        try:
             # Use SSL
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+            with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=10) as server:
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)
-        else:
-            # Use TLS
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.send_message(msg)
-        
-        return True
+                return True
+        except Exception as e:
+            print(f"SSL (465) failed: {e}. Retrying with TLS (587)...")
+            # Fallback to TLS
+            try:
+                with smtplib.SMTP(settings.smtp_host, 587, timeout=10) as server:
+                    server.starttls()
+                    server.login(settings.smtp_user, settings.smtp_password)
+                    server.send_message(msg)
+                    return True
+            except Exception as e2:
+                print(f"TLS (587) also failed: {e2}")
+                raise e2
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
