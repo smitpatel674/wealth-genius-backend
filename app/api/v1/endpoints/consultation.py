@@ -25,7 +25,7 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "smitpatidar6704@gmail.com")
 GMAIL_USER = os.getenv("SMTP_USER", "smitpatidar6704@gmail.com")
-GMAIL_PASSWORD = os.getenv("SMTP_PASSWORD", "avec awrj wxuw uhcu")
+GMAIL_PASSWORD = os.getenv("SMTP_PASSWORD", "aiac ijrg mcrr eolm")
 
 def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
     """Send email using Gmail SMTP"""
