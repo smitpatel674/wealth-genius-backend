@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Default CORS origins used when no env override is provided
     _default_cors_origins: List[str] = [
-        "https://wealth-genius-frontend.vercel.app/",
+        "https://wealth-genius-frontend.vercel.app",
     ]
 
     def __init__(self, **data):
