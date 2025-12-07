@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
@@ -20,6 +20,7 @@ router = APIRouter()
 @router.post("/form", response_model=EnrollmentFormResponse)
 def submit_enrollment_form(
     form_data: EnrollmentFormCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -150,20 +151,15 @@ def submit_enrollment_form(
         db.add(enrollment)
         db.commit()
         
-        # Send confirmation email to customer
-        try:
-            email_sent = send_enrollment_confirmation_email(
-                student_name=form_data.name,
-                student_email=form_data.email,
-                course_title=form_data.course_title,
-                course_price=form_data.course_price,
-                enrollment_id=enrollment.id
-            )
-            if not email_sent:
-                print(f"Warning: Failed to send enrollment confirmation email to {form_data.email}")
-        except Exception as e:
-            print(f"Error sending enrollment confirmation email: {e}")
-            # Don't fail the enrollment if email fails
+        # Send confirmation email to customer in background
+        background_tasks.add_task(
+            send_enrollment_confirmation_email,
+            student_name=form_data.name,
+            student_email=form_data.email,
+            course_title=form_data.course_title,
+            course_price=form_data.course_price,
+            enrollment_id=enrollment.id
+        )
         
         return EnrollmentFormResponse(
             message=f"Enrollment request submitted successfully for {course.title}! We will contact you soon.",

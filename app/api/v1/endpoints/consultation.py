@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -43,7 +43,7 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
             msg.attach(MIMEText(body, 'plain'))
         
         # Gmail SMTP connection
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
         server.starttls()
         server.login(GMAIL_USER, GMAIL_PASSWORD)
         
@@ -74,6 +74,7 @@ def format_consultation_date_time(date_str: str, time_str: str) -> str:
 @router.post("/schedule-consultation")
 async def schedule_consultation(
     request: ConsultationRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     try:
@@ -154,20 +155,15 @@ Please ensure to contact the client at the scheduled time.
 Wealth Genius Admin Panel
 """
         
-        # Send emails
-        user_email_sent = send_email(request.email, user_subject, user_body)
-        admin_email_sent = send_email(ADMIN_EMAIL, admin_subject, admin_body)
-        
-        if not user_email_sent:
-            print("Warning: Failed to send confirmation email to user")
-        if not admin_email_sent:
-            print("Warning: Failed to send notification email to admin")
+        # Send emails in background
+        background_tasks.add_task(send_email, request.email, user_subject, user_body)
+        background_tasks.add_task(send_email, ADMIN_EMAIL, admin_subject, admin_body)
         
         return {
             "message": "Consultation scheduled successfully!",
             "consultation_id": consultation.id,
             "scheduled_datetime": consultation_datetime,
-            "email_sent": user_email_sent
+            "email_sent": True
         }
         
     except Exception as e:

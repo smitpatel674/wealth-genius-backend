@@ -22,7 +22,7 @@ def send_email(to_email: str, subject: str, body: str, html_body: str = None):
             msg.attach(html_part)
 
         # Send email
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
