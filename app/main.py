@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1.api import api_router
@@ -32,6 +32,21 @@ app.add_middleware(
 )
 
 print(f"Configured CORS origins: {settings.cors_origins}")
+
+
+@app.get("/debug-cors")
+def debug_cors(request: Request):
+    """Debug endpoint: returns configured CORS origins and the incoming Origin header.
+
+    Use this on your deployed instance to verify the app sees the frontend origin
+    and to confirm the CORS configuration logged at startup.
+    """
+    origin = request.headers.get("origin")
+    print(f"Incoming Origin header: {origin}")
+    return {
+        "configured_origins": settings.cors_origins,
+        "request_origin": origin,
+    }
 
 # Include API router
 app.include_router(api_router, prefix=settings.api_v1_prefix)

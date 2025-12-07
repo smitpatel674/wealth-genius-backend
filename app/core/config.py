@@ -85,8 +85,11 @@ class Settings(BaseSettings):
         if not parsed:
             parsed = list(self._default_cors_origins)
 
+        # Normalize origins: remove trailing slashes and ignore empty entries
+        normalized = [o.rstrip('/') for o in parsed if isinstance(o, str) and o.strip()]
+
         # At runtime, expose `cors_origins` as a list for the rest of the app
-        object.__setattr__(self, "cors_origins", parsed)
+        object.__setattr__(self, "cors_origins", normalized)
     
     class Config:
         env_file = ".env"
