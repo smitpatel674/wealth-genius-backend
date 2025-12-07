@@ -43,14 +43,13 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
             msg.attach(MIMEText(body, 'plain'))
         
         # Gmail SMTP connection
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
-        server.starttls()
-        server.login(GMAIL_USER, GMAIL_PASSWORD)
-        
-        # Send email
-        text = msg.as_string()
-        server.sendmail(GMAIL_USER, to_email, text)
-        server.quit()
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(GMAIL_USER, GMAIL_PASSWORD)
+            
+            # Send email
+            text = msg.as_string()
+            server.sendmail(GMAIL_USER, to_email, text)
         
         return True
     except Exception as e:
