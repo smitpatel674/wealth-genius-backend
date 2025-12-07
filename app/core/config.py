@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     
     # Email Configuration (Gmail)
     smtp_host: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    smtp_port: int = int(os.getenv("SMTP_PORT", 587))
+    smtp_port: int = int(os.getenv("SMTP_PORT", 465))
     smtp_user: str = os.getenv("SMTP_USER", "smitpatidar6704@gmail.com")
     smtp_password: str = os.getenv("SMTP_PASSWORD", "aiac ijrg mcrr eolm")
     
