@@ -1,4 +1,6 @@
 import smtplib
+import socket
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.core.config import settings
@@ -23,8 +25,16 @@ def send_email(to_email: str, subject: str, body: str, html_body: str = None):
 
         # Try SSL connection (Port 465) first
         try:
+            # Force IPv4 resolution
+            smtp_ip = socket.gethostbyname(settings.smtp_host)
+            
+            # Create SSL context that doesn't check hostname (since we use IP)
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
             # Use SSL
-            with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=10) as server:
+            with smtplib.SMTP_SSL(smtp_ip, 465, context=context, timeout=10) as server:
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)
                 return True
@@ -32,8 +42,15 @@ def send_email(to_email: str, subject: str, body: str, html_body: str = None):
             print(f"SSL (465) failed: {e}. Retrying with TLS (587)...")
             # Fallback to TLS
             try:
-                with smtplib.SMTP(settings.smtp_host, 587, timeout=10) as server:
-                    server.starttls()
+                # Force IPv4 resolution
+                smtp_ip = socket.gethostbyname(settings.smtp_host)
+                
+                with smtplib.SMTP(smtp_ip, 587, timeout=10) as server:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    
+                    server.starttls(context=context)
                     server.login(settings.smtp_user, settings.smtp_password)
                     server.send_message(msg)
                     return True

@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 import smtplib
+import socket
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -44,7 +46,16 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
         
         # Try SSL connection (Port 465) first
         try:
-            with smtplib.SMTP_SSL(SMTP_SERVER, 465, timeout=10) as server:
+            # Force IPv4 resolution
+            smtp_ip = socket.gethostbyname(SMTP_SERVER)
+            print(f"Resolved {SMTP_SERVER} to {smtp_ip}")
+            
+            # Create SSL context that doesn't check hostname (since we use IP)
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
+            with smtplib.SMTP_SSL(smtp_ip, 465, context=context, timeout=10) as server:
                 server.login(GMAIL_USER, GMAIL_PASSWORD)
                 text = msg.as_string()
                 server.sendmail(GMAIL_USER, to_email, text)
@@ -53,8 +64,15 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
             print(f"SSL (465) failed: {e}. Retrying with TLS (587)...")
             # Fallback to TLS (Port 587)
             try:
-                with smtplib.SMTP(SMTP_SERVER, 587, timeout=10) as server:
-                    server.starttls()
+                # Force IPv4 resolution again just in case
+                smtp_ip = socket.gethostbyname(SMTP_SERVER)
+                
+                with smtplib.SMTP(smtp_ip, 587, timeout=10) as server:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    
+                    server.starttls(context=context)
                     server.login(GMAIL_USER, GMAIL_PASSWORD)
                     text = msg.as_string()
                     server.sendmail(GMAIL_USER, to_email, text)
